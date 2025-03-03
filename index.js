@@ -15,7 +15,7 @@ app.get("/webhook", (req, res) => {
     const token = req.query["hub.verify_token"];
     const challenge = req.query["hub.challenge"];
 
-    logWebhook("verification", {
+    console.log("Webhook verification:", {
       mode: mode || "not provided",
       token: token || "not provided",
       challenge: challenge || "not provided",
@@ -23,19 +23,20 @@ app.get("/webhook", (req, res) => {
 
     // Input validation
     if (!mode || !token) {
-      logWebhook("verification_failed", { error: "Missing mode or token" });
+      console.log("Webhook verification failed:", { error: "Missing mode or token" });
       return res.sendStatus(400);
     }
 
     // Check the mode and token sent are correct
+    const WEBHOOK_VERIFY_TOKEN = "flavours-of-heaven"; // Define the token
     if (mode === "subscribe" && token === WEBHOOK_VERIFY_TOKEN) {
       // Respond with 200 OK and challenge token from the request
-      logWebhook("verified", { challenge });
+      console.log("Webhook verified:", { challenge });
       return res.status(200).send(challenge);
     }
 
     // Responds with '403 Forbidden' if verify tokens do not match
-    logWebhook("verification_failed", {
+    console.log("Webhook verification failed:", {
       mode: mode || "not provided",
       verifyToken: token || "not provided",
       tokenMatch: token === "flavours-of-heaven",
@@ -43,7 +44,7 @@ app.get("/webhook", (req, res) => {
     });
     return res.sendStatus(403);
   } catch (error) {
-    logger.error("Error in verifyWebhook:", error);
+    console.error("Error in verifyWebhook:", error);
     return res.sendStatus(500);
   }
 });
