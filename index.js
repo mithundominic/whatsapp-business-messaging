@@ -1,7 +1,9 @@
 const express = require("express");
 const axios = require("axios");
+const crypto = require("crypto");
 const app = express();
 const WEBHOOK_VERIFY_TOKEN = "flavours-of-heaven";
+const APP_SECRET = "your_app_secret"; // Replace with your actual app secret
 
 app.use(express.json());
 
@@ -57,14 +59,14 @@ app.post("/webhook", (req, res) => {
     const signature = req.headers["x-hub-signature-256"];
 
     if (!signature) {
-      logWebhook("error", { error: "No signature found in the request" });
+      console.log("Error:", { error: "No signature found in the request" });
       return res.sendStatus(403);
     }
 
     // Verify the signature
     const elements = signature.split("=");
     if (elements.length !== 2) {
-      logWebhook("error", { error: "Invalid signature format" });
+      console.log("Error:", { error: "Invalid signature format" });
       return res.sendStatus(403);
     }
 
@@ -75,7 +77,7 @@ app.post("/webhook", (req, res) => {
       .digest("hex");
 
     if (signatureHash !== expectedHash) {
-      logWebhook("error", { error: "Invalid signature" });
+      console.log("Error:", { error: "Invalid signature" });
       return res.sendStatus(403);
     }
 
@@ -83,7 +85,7 @@ app.post("/webhook", (req, res) => {
 
     // Input validation
     if (!body || !body.object) {
-      logWebhook("error", { error: "Invalid request body" });
+      console.log("Error:", { error: "Invalid request body" });
       return res.sendStatus(400);
     }
 
@@ -91,13 +93,13 @@ app.post("/webhook", (req, res) => {
     if (body.object === "page") {
       // Iterates over each entry - there may be multiple if batched
       if (!Array.isArray(body.entry)) {
-        logWebhook("error", { error: "Invalid entry format" });
+        console.log("Error:", { error: "Invalid entry format" });
         return res.sendStatus(400);
       }
 
       body.entry.forEach(function (entry) {
         if (!entry || !entry.messaging || !Array.isArray(entry.messaging)) {
-          logWebhook("error", { error: "Invalid entry format" });
+          console.log("Error:", { error: "Invalid entry format" });
           return;
         }
 
@@ -108,13 +110,13 @@ app.post("/webhook", (req, res) => {
           !webhook_event.sender ||
           !webhook_event.sender.id
         ) {
-          logWebhook("error", { error: "Invalid webhook event format" });
+          console.log("Error:", { error: "Invalid webhook event format" });
           return;
         }
 
         const sender_psid = webhook_event.sender.id;
 
-        logWebhook("event_received", {
+        console.log("Event received:", {
           event: webhook_event,
           sender_psid: sender_psid,
         });
@@ -134,7 +136,7 @@ app.post("/webhook", (req, res) => {
       res.sendStatus(404);
     }
   } catch (error) {
-    logger.error("Error in handleWebhook:", error);
+    console.error("Error in handleWebhook:", error);
     return res.sendStatus(500);
   }
 });
