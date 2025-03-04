@@ -55,86 +55,60 @@ app.get("/webhook", (req, res) => {
 
 app.post("/webhook", (req, res) => {
   try {
-    // Add bypass header
-    const signature = req.headers["x-hub-signature-256"];
-
-    if (!signature) {
-      console.log("Error:", { error: "No signature found in the request" });
-      return res.sendStatus(403);
-    }
-
-    // Verify the signature
-    const elements = signature.split("=");
-    if (elements.length !== 2) {
-      console.log("Error:", { error: "Invalid signature format" });
-      return res.sendStatus(403);
-    }
-
-    const signatureHash = elements[1];
-    const expectedHash = crypto
-      .createHmac("sha256", APP_SECRET)
-      .update(JSON.stringify(req.body))
-      .digest("hex");
-
-    if (signatureHash !== expectedHash) {
-      console.log("Error:", { error: "Invalid signature" });
-      return res.sendStatus(403);
-    }
-
     const body = req.body;
-
+    console.log("body:", JSON.stringify(body, null, 2));
     // Input validation
-    if (!body || !body.object) {
-      console.log("Error:", { error: "Invalid request body" });
-      return res.sendStatus(400);
-    }
+    // if (!body || !body.object) {
+    //   console.log("Error:", { error: "Invalid request body" });
+    //   return res.sendStatus(400);
+    // }
 
-    // Checks if this is an event from a page subscription
-    if (body.object === "page") {
-      // Iterates over each entry - there may be multiple if batched
-      if (!Array.isArray(body.entry)) {
-        console.log("Error:", { error: "Invalid entry format" });
-        return res.sendStatus(400);
-      }
+    // // Checks if this is an event from a page subscription
+    // if (body.object === "page") {
+    //   // Iterates over each entry - there may be multiple if batched
+    //   if (!Array.isArray(body.entry)) {
+    //     console.log("Error:", { error: "Invalid entry format" });
+    //     return res.sendStatus(400);
+    //   }
 
-      body.entry.forEach(function (entry) {
-        if (!entry || !entry.messaging || !Array.isArray(entry.messaging)) {
-          console.log("Error:", { error: "Invalid entry format" });
-          return;
-        }
+    //   // body.entry.forEach(function (entry) {
+    //   //   if (!entry || !entry.messaging || !Array.isArray(entry.messaging)) {
+    //   //     console.log("Error:", { error: "Invalid entry format" });
+    //   //     return;
+    //   //   }
 
-        // Gets the body of the webhook event
-        let webhook_event = entry.messaging[0];
-        if (
-          !webhook_event ||
-          !webhook_event.sender ||
-          !webhook_event.sender.id
-        ) {
-          console.log("Error:", { error: "Invalid webhook event format" });
-          return;
-        }
+    //     // Gets the body of the webhook event
+    //     let webhook_event = entry.messaging[0];
+    //     if (
+    //       !webhook_event ||
+    //       !webhook_event.sender ||
+    //       !webhook_event.sender.id
+    //     ) {
+    //       console.log("Error:", { error: "Invalid webhook event format" });
+    //       return;
+    //     }
 
-        const sender_psid = webhook_event.sender.id;
+    //     const sender_psid = webhook_event.sender.id;
 
-        console.log("Event received:", {
-          event: webhook_event,
-          sender_psid: sender_psid,
-        });
+    //     console.log("Event received:", {
+    //       event: webhook_event,
+    //       sender_psid: sender_psid,
+    //     });
 
-        // Handle the event based on its type
-        if (webhook_event.message) {
-          handleMessage(sender_psid, webhook_event.message);
-        } else if (webhook_event.postback) {
-          handlePostback(sender_psid, webhook_event.postback);
-        }
-      });
+    //     // Handle the event based on its type
+    //     if (webhook_event.message) {
+    //       handleMessage(sender_psid, webhook_event.message);
+    //     } else if (webhook_event.postback) {
+    //       handlePostback(sender_psid, webhook_event.postback);
+    //     }
+    //   });
 
-      // Returns a '200 OK' response to all requests
-      res.status(200).send("EVENT_RECEIVED");
-    } else {
-      // Returns a '404 Not Found' if event is not from a page subscription
-      res.sendStatus(404);
-    }
+    //   // Returns a '200 OK' response to all requests
+    res.status(200).send("EVENT_RECEIVED");
+    // } else {
+    //   // Returns a '404 Not Found' if event is not from a page subscription
+    //   res.sendStatus(404);
+    // }
   } catch (error) {
     console.error("Error in handleWebhook:", error);
     return res.sendStatus(500);
