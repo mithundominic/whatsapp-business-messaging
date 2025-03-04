@@ -7,7 +7,13 @@ const logger = require("./utils/logger");
 const app = express();
 
 // Middleware
-app.use(express.json());
+app.use(
+  express.json({
+    verify: (req, res, buf) => {
+      req.rawBody = buf;
+    },
+  })
+);
 
 // Routes
 app.get("/", (req, res) => {
