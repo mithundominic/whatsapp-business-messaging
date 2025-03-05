@@ -34,7 +34,7 @@ class WhatsAppService {
         },
       });
 
-      logger.info("Message sent successfully", {
+      logger.debug("Message sent successfully", {
         to,
         type,
         status: response.data.status || "sent",

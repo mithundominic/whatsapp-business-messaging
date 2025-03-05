@@ -8,7 +8,7 @@ const handleMessage = async (req, res) => {
 
     // Validate webhook body
     if (!body || typeof body !== "object") {
-      logger.error("Invalid webhook body", { body });
+      logger.error("Invalid webhook body", { body, requestId: req.id });
       return res.sendStatus(400);
     }
 
