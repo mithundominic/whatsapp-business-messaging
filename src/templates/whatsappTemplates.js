@@ -1,59 +1,59 @@
+/**
+ * WhatsApp message templates configuration
+ *
+ * This file defines templates for different types of WhatsApp messages:
+ * - For order messages: Sends order total and items ordered
+ * - For other messages: Sends a simple thank you message
+ */
+
 const templates = {
-  hello_world: {
-    name: 'hello_world',
-    language: {
-      code: 'en_US'
-    }
-  },
-  booking_confirmation: {
-    name: 'booking_confirmation',
-    language: {
-      code: 'en_US'
+  // Default template for non-order messages
+  default_response: {
+    type: "text",
+    text: {
+      body: "Thank you for your message!",
     },
-    getComponents: (name, rooms, date) => ({
-      type: 'body',
-      parameters: [
-        {
-          type: 'text',
-          text: name
-        },
-        {
-          type: 'text',
-          text: rooms
-        },
-        {
-          type: 'text',
-          text: date
-        }
-      ]
-    })
   },
-  sample_shipping_confirmation: {
-    name: 'sample_shipping_confirmation',
-    language: {
-      code: 'en_US'
-    }
-  }
+
+  // Template for order messages
+  order_confirmation: {
+    type: "text",
+    getText: (orderDetails) => {
+      const totalAmount = orderDetails.product_items.reduce((sum, item) => {
+        return sum + item.quantity * item.item_price;
+      }, 0);
+
+      const itemsList = orderDetails.product_items
+        .map(
+          (item) =>
+            `${item.product_retailer_id}: ${item.quantity} x ${item.currency} ${item.item_price}`
+        )
+        .join("\n");
+
+      return {
+        body: `Thank you for your order!\n\nOrder Details:\n${itemsList}\n\nTotal Amount: ${orderDetails.product_items[0].currency} ${totalAmount}`,
+      };
+    },
+  },
 };
 
-const getTemplateByType = (type, params = {}) => {
-  const template = templates[type];
-  if (!template) {
-    throw new Error(`Template ${type} not found`);
+/**
+ * Get message content based on message type and details
+ * @param {string} type - Message type ('order' or other)
+ * @param {object} details - Message details (order details for order type)
+ * @returns {object} Message content configuration
+ */
+const getMessageContent = (type, details = {}) => {
+  if (type === "order") {
+    return {
+      ...templates.order_confirmation,
+      text: templates.order_confirmation.getText(details),
+    };
   }
 
-  const templateData = {
-    name: template.name,
-    language: template.language
-  };
-
-  if (template.getComponents) {
-    templateData.components = [template.getComponents(...Object.values(params))];
-  }
-
-  return templateData;
+  return templates.default_response;
 };
 
 module.exports = {
-  getTemplateByType
+  getMessageContent,
 };

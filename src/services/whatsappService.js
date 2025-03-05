@@ -1,68 +1,54 @@
 const axios = require("axios");
 const logger = require("../utils/logger");
-const { WHATSAPP_TOKEN } = require("../config/environment");
-const { getTemplateByType } = require("../templates/whatsappTemplates");
+const config = require("../config/environment");
+const { getMessageContent } = require("../templates/whatsappTemplates");
 
 class WhatsAppService {
   constructor() {
-    this.baseUrl = "https://graph.facebook.com/v12.0";
+    this.baseUrl = `${config.whatsapp.apiUrl}/${config.whatsapp.apiVersion}`;
   }
 
-  async sendTemplate(phoneNumberId, to, templateType, params = {}) {
+  async sendMessage(phoneNumberId, to, type, details = {}) {
     try {
-      const template = getTemplateByType(templateType, params);
+      const messageContent = getMessageContent(type, details);
 
       const data = {
         messaging_product: "whatsapp",
         to: to,
-        type: "template",
-        template: "Hello Mithun Dominic" || template,
+        ...messageContent,
       };
+
+      logger.debug("Sending WhatsApp message", {
+        to,
+        type,
+        data,
+      });
 
       const response = await axios({
         method: "POST",
         url: `${this.baseUrl}/${phoneNumberId}/messages`,
         data: data,
         headers: {
-          Authorization: `Bearer ${WHATSAPP_TOKEN}`,
+          Authorization: `Bearer ${config.whatsapp.token}`,
           "Content-Type": "application/json",
         },
       });
 
-      logger.info("Template message sent successfully", {
-        templateType,
+      logger.info("Message sent successfully", {
         to,
-        response: response.data,
+        type,
+        status: response.data.status || "sent",
       });
 
       return response.data;
     } catch (error) {
-      logger.error("Error sending template message", error);
+      logger.error("Error sending message", {
+        error: error.message,
+        file: "whatsappService.js",
+        line: error.stack?.split("\n")[1]?.trim() || "unknown",
+        stack: error.stack,
+      });
       throw error;
-    }
-  }
-
-  getTemplateForMessage(message) {
-    const msg = message.toLowerCase();
-
-    switch (msg) {
-      case "hi":
-        return {
-          type: "hello_world",
-        };
-      case "book":
-        return {
-          type: "booking_confirmation",
-          params: {
-            name: "John Doe",
-            rooms: "2",
-            date: "2023-06-15",
-          },
-        };
-      default:
-        return {
-          type: "sample_shipping_confirmation",
-        };
     }
   }
 }
