@@ -62,17 +62,21 @@ const templates = {
 const getMessageContent = (type, details = {}) => {
   logger.info("getMessageContent invoked", { type, details });
 
-  if (type === "orderConfirmation" && details?.product_items?.length > 0) {
-    const orderText = templates.order_confirmation.getText(details);
-    logger.info("Returning order confirmation message", { orderText });
-    return {
-      type: "text",
-      text: orderText,
-    };
+  switch (type) {
+    case "orderConfirmation":
+      if (details?.product_items?.length > 0) {
+        const orderText = templates.order_confirmation.getText(details);
+        logger.info("Returning order confirmation message", { orderText });
+        return {
+          type: "text",
+          text: orderText,
+        };
+      }
+      break;
+    default:
+      logger.warn("Returning default response", { type, details });
+      return templates.default_response;
   }
-
-  logger.warn("Returning default response", { type, details });
-  return templates.default_response;
 };
 
 module.exports = {

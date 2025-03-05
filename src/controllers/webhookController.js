@@ -1,14 +1,52 @@
 const logger = require("../utils/logger");
 const whatsappService = require("../services/whatsappService");
 const config = require("../config/environment");
+const {
+  validateWebhookBody,
+  validateMessageStructure,
+} = require("../utils/validation");
+
+/**
+ * Handle order messages
+ * @param {string} phoneNumberId - The phone number ID
+ * @param {string} from - The sender's phone number
+ * @param {object} orderDetails - The order details
+ */
+const handleOrderMessage = async (phoneNumberId, from, orderDetails) => {
+  logger.info("Order details received", { orderDetails });
+  if (orderDetails) {
+    await whatsappService.sendOrderConfirmation(
+      phoneNumberId,
+      from,
+      orderDetails
+    );
+  } else {
+    logger.warn("No order details found in the message", { orderDetails });
+  }
+};
+
+/**
+ * Handle text messages
+ * @param {string} phoneNumberId - The phone number ID
+ * @param {string} from - The sender's phone number
+ * @param {string} messageBody - The message body
+ */
+const handleTextMessage = async (phoneNumberId, from, messageBody) => {
+  const templateConfig = whatsappService.getTemplateForMessage(messageBody);
+  await whatsappService.sendTemplate(
+    phoneNumberId,
+    from,
+    templateConfig.type,
+    templateConfig.params
+  );
+};
 
 const handleMessage = async (req, res) => {
   try {
     const body = req.body;
 
     // Validate webhook body
-    if (!body || typeof body !== "object") {
-      logger.error("Invalid webhook body", { body, requestId: req.id });
+    if (!validateWebhookBody(body)) {
       return res.sendStatus(400);
     }
 
@@ -20,7 +58,7 @@ const handleMessage = async (req, res) => {
 
     if (body.object === "whatsapp_business_account") {
       // Validate message structure
-      if (!body.entry?.[0]?.changes?.[0]?.value?.messages?.[0]) {
+      if (!validateMessageStructure(body)) {
         return res.sendStatus(200); // Acknowledge non-message webhooks silently
       }
 
@@ -33,7 +71,7 @@ const handleMessage = async (req, res) => {
         return res.sendStatus(400);
       }
 
-      const phone_number_id = metadata.phone_number_id;
+      const phoneNumberId = metadata.phone_number_id;
       const from = message.from;
 
       // Log received message
@@ -45,28 +83,9 @@ const handleMessage = async (req, res) => {
       });
 
       if (message.type === "order") {
-        // Handle order message
-        const orderDetails = message.order;
-        logger.info("Order details received", { orderDetails });
-        if (orderDetails) {
-          await whatsappService.sendOrderConfirmation(
-            phone_number_id,
-            from,
-            orderDetails
-          );
-        } else {
-          logger.warn("No order details found in the message", { message });
-        }
+        await handleOrderMessage(phoneNumberId, from, message.order);
       } else if (message.text?.body) {
-        // Handle text message
-        const msg_body = message.text.body;
-        const templateConfig = whatsappService.getTemplateForMessage(msg_body);
-        await whatsappService.sendTemplate(
-          phone_number_id,
-          from,
-          templateConfig.type,
-          templateConfig.params
-        );
+        await handleTextMessage(phoneNumberId, from, message.text.body);
       } else {
         logger.warn("Unsupported message type", { type: message.type });
       }
