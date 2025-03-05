@@ -51,6 +51,48 @@ class WhatsAppService {
       throw error;
     }
   }
+
+  async sendOrderConfirmation(phoneNumberId, to, orderDetails) {
+    try {
+      const messageContent = getMessageContent(
+        "orderConfirmation",
+        orderDetails
+      );
+
+      const data = {
+        messaging_product: "whatsapp",
+        to: to,
+        ...messageContent,
+      };
+
+      logger.debug("Sending order confirmation", {
+        to,
+        data,
+      });
+
+      const response = await this.sendMessage(
+        phoneNumberId,
+        to,
+        "orderConfirmation",
+        orderDetails
+      );
+
+      logger.debug("Order confirmation sent successfully", {
+        to,
+        status: response.status || "sent",
+      });
+
+      return response;
+    } catch (error) {
+      logger.error("Error sending order confirmation", {
+        error: error.message,
+        file: "whatsappService.js",
+        line: error.stack?.split("\n")[1]?.trim() || "unknown",
+        stack: error.stack,
+      });
+      throw error;
+    }
+  }
 }
 
 module.exports = new WhatsAppService();

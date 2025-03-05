@@ -47,11 +47,16 @@ const handleMessage = async (req, res) => {
       if (message.type === "order") {
         // Handle order message
         const orderDetails = message.order;
-        await whatsappService.sendOrderConfirmation(
-          phone_number_id,
-          from,
-          orderDetails
-        );
+        logger.info("Order details received", { orderDetails });
+        if (orderDetails) {
+          await whatsappService.sendOrderConfirmation(
+            phone_number_id,
+            from,
+            orderDetails
+          );
+        } else {
+          logger.warn("No order details found in the message", { message });
+        }
       } else if (message.text?.body) {
         // Handle text message
         const msg_body = message.text.body;
