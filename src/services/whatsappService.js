@@ -52,6 +52,20 @@ class WhatsAppService {
     }
   }
 
+  async sendOrderConfirmation(phoneNumberId, to, orderDetails, paymentLink) {
+    const messageContent = getMessageContent(
+      "orderConfirmation",
+      orderDetails,
+      paymentLink
+    );
+    return this.sendMessage(
+      phoneNumberId,
+      to,
+      "orderConfirmation",
+      messageContent
+    );
+  }
+
   async sendMessageWithDetails(phoneNumberId, to, type, details = {}) {
     return this.sendMessage(phoneNumberId, to, type, details);
   }

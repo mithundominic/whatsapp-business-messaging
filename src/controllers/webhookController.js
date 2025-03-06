@@ -1,6 +1,7 @@
 const logger = require("../utils/logger");
 const whatsappService = require("../services/whatsappService");
 const config = require("../config/environment");
+const stripeService = require("../services/stripeService");
 const {
   validateWebhookBody,
   validateMessageStructure,
@@ -15,11 +16,22 @@ const {
 const handleOrderMessage = async (phoneNumberId, from, orderDetails) => {
   logger.info("Order details received", { orderDetails });
   if (orderDetails) {
-    await whatsappService.sendOrderConfirmation(
-      phoneNumberId,
-      from,
-      orderDetails
-    );
+    try {
+      // Log the order details structure
+      logger.info("Creating payment link with order details", { orderDetails });
+
+      // Create payment link using the order details directly
+      const paymentLink = await stripeService.createPaymentLink(orderDetails);
+
+      await whatsappService.sendOrderConfirmation(
+        phoneNumberId,
+        from,
+        orderDetails,
+        paymentLink // Pass the payment link to the confirmation message
+      );
+    } catch (error) {
+      logger.error("Error creating payment link", { error: error.message });
+    }
   } else {
     logger.warn("No order details found in the message", { orderDetails });
   }

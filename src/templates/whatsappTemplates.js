@@ -20,7 +20,7 @@ const templates = {
   // Template for order messages
   order_confirmation: {
     type: "text",
-    getText: (orderDetails) => {
+    getText: (orderDetails, paymentLink) => {
       logger.info("Generating order confirmation text", { orderDetails });
 
       if (
@@ -47,7 +47,7 @@ const templates = {
       logger.info("Generated order summary", { totalAmount, itemsList });
 
       return {
-        body: `Thank you for your order!\n\nOrder Details:\n${itemsList}\n\nTotal Amount: ${currency} ${totalAmount}`,
+        body: `Thank you for your order!\n\nOrder Details:\n${itemsList}\n\nTotal Amount: ${currency} ${totalAmount}\n\nPayment Link: ${paymentLink}`,
       };
     },
   },
@@ -59,13 +59,16 @@ const templates = {
  * @param {object} details - Message details (order details for order type)
  * @returns {object} Message content configuration
  */
-const getMessageContent = (type, details = {}) => {
+const getMessageContent = (type, details = {}, paymentLink = "") => {
   logger.info("getMessageContent invoked", { type, details });
 
   switch (type) {
     case "orderConfirmation":
       if (details?.product_items?.length > 0) {
-        const orderText = templates.order_confirmation.getText(details);
+        const orderText = templates.order_confirmation.getText(
+          details,
+          paymentLink
+        );
         logger.info("Returning order confirmation message", { orderText });
         return {
           type: "text",
