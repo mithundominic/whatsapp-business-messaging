@@ -1,67 +1,45 @@
 const chalk = require("chalk");
 
-const getTimestamp = () => {
-  const now = new Date();
-  const day = String(now.getDate()).padStart(2, "0");
-  const month = String(now.getMonth() + 1).padStart(2, "0");
-  const year = now.getFullYear();
-  const hours = String(now.getHours()).padStart(2, "0");
-  const minutes = String(now.getMinutes()).padStart(2, "0");
-  const seconds = String(now.getSeconds()).padStart(2, "0");
+const getTimestamp = () =>
+  new Date().toLocaleString("en-GB", {
+    day: "2-digit",
+    month: "2-digit",
+    year: "numeric",
+    hour: "2-digit",
+    minute: "2-digit",
+    second: "2-digit",
+  });
 
-  return `${day}/${month}/${year} ${hours}:${minutes}:${seconds}`;
-};
+const log = (level, color, icon, message, meta = {}) => {
+  console.log(
+    `${chalk[color](icon)} ${chalk.gray(getTimestamp())} ${chalk[color].bold(
+      level
+    )} ${chalk.white(message)}`
+  );
 
-const formatMeta = (meta) => {
-  if (Object.keys(meta).length === 0) return "";
-  return "\n" + chalk.gray(JSON.stringify(meta, null, 2));
+  if (meta && Object.keys(meta).length) {
+    console.dir(meta, { depth: null, colors: true }); // Allow object expansion
+  }
 };
 
 const logger = {
-  info: (message, meta = {}) => {
-    console.log(
-      `${chalk.blue("ℹ")} ${chalk.gray(getTimestamp())} ${chalk.blue.bold(
-        "INFO"
-      )} ${chalk.white(message)}${formatMeta(meta)}`
-    );
-  },
-
-  success: (message, meta = {}) => {
-    console.log(
-      `${chalk.green("✓")} ${chalk.gray(getTimestamp())} ${chalk.green.bold(
-        "SUCCESS"
-      )} ${chalk.white(message)}${formatMeta(meta)}`
-    );
-  },
-
-  warn: (message, meta = {}) => {
-    console.log(
-      `${chalk.yellow("⚠")} ${chalk.gray(getTimestamp())} ${chalk.yellow.bold(
-        "WARN"
-      )} ${chalk.white(message)}${formatMeta(meta)}`
-    );
-  },
-
-  error: (message, error = {}, meta = {}) => {
-    const errorMessage = error.message || error;
-    const errorStack = error.stack ? "\n" + chalk.gray(error.stack) : "";
-
+  info: (message, meta) => log("INFO", "blue", "ℹ", message, meta),
+  success: (message, meta) => log("SUCCESS", "green", "✓", message, meta),
+  warn: (message, meta) => log("WARN", "yellow", "⚠", message, meta),
+  error: (message, error = {}, meta) => {
     console.error(
       `${chalk.red("✖")} ${chalk.gray(getTimestamp())} ${chalk.red.bold(
         "ERROR"
       )} ${chalk.white(message)}\n${chalk.red("→")} ${chalk.red(
-        errorMessage
-      )}${errorStack}${formatMeta(meta)}`
+        error.message || error
+      )}`
     );
-  },
 
-  debug: (message, meta = {}) => {
-    console.log(
-      `${chalk.magenta("⚙")} ${chalk.gray(getTimestamp())} ${chalk.magenta.bold(
-        "DEBUG"
-      )} ${chalk.white(message)}${formatMeta(meta)}`
-    );
+    if (error.stack) console.error(chalk.gray(error.stack));
+    if (meta && Object.keys(meta).length)
+      console.dir(meta, { depth: null, colors: true });
   },
+  debug: (message, meta) => log("DEBUG", "magenta", "⚙", message, meta),
 };
 
 module.exports = logger;

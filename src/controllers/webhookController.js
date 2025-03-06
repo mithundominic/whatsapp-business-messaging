@@ -11,15 +11,15 @@ const {
  * @param {string} phoneNumberId - The phone number ID
  * @param {string} from - The sender's phone number
  * @param {object} orderDetails - The order details
+ * @param {string} id - The ID from the webhook payload
  */
-const handleOrderMessage = async (phoneNumberId, from, orderDetails) => {
-  logger.info("Order details received", { orderDetails });
+const handleOrderMessage = async (phoneNumberId, from, orderDetails, id) => {
+  logger.info("Order details received", { orderDetails, id });
   if (orderDetails) {
-    await whatsappService.sendOrderConfirmation(
-      phoneNumberId,
-      from,
-      orderDetails
-    );
+    await whatsappService.sendOrderConfirmation(phoneNumberId, from, {
+      ...orderDetails,
+      id,
+    });
   } else {
     logger.warn("No order details found in the message", { orderDetails });
   }
@@ -64,6 +64,7 @@ const handleMessage = async (req, res) => {
 
       const message = body.entry[0].changes[0].value.messages[0];
       const metadata = body.entry[0].changes[0].value.metadata;
+      const id = body.entry[0].id;
 
       // Validate required message fields
       if (!metadata?.phone_number_id || !message?.from) {
@@ -83,7 +84,8 @@ const handleMessage = async (req, res) => {
       });
 
       if (message.type === "order") {
-        await handleOrderMessage(phoneNumberId, from, message.order);
+        const orderDetails = message.order || message.text.body; // Ensure order details are extracted correctly
+        await handleOrderMessage(phoneNumberId, from, orderDetails, id); // Pass the id here
       } else if (message.text?.body) {
         await handleTextMessage(phoneNumberId, from, message.text.body);
       } else {

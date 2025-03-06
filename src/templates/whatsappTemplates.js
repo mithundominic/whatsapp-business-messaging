@@ -63,7 +63,7 @@ const getMessageContent = (type, details = {}) => {
   logger.info("getMessageContent invoked", { type, details });
 
   switch (type) {
-    case "orderConfirmation":
+    case "order_confirmation":
       if (details?.product_items?.length > 0) {
         const orderText = templates.order_confirmation.getText(details);
         logger.info("Returning order confirmation message", { orderText });
