@@ -68,9 +68,9 @@ const handleMessage = async (req, res) => {
         return res.sendStatus(200); // Acknowledge non-message webhooks silently
       }
 
-      const message = body.entry[0].changes[0].value.messages[0];
-      const metadata = body.entry[0].changes[0].value.metadata;
-      const id = body.entry[0].id;
+      const message = body.entry[0]?.changes[0]?.value?.messages?.[0];
+      const metadata = body.entry[0]?.changes[0]?.value?.metadata;
+      const id = body.entry[0]?.id;
 
       // Validate required message fields
       if (!metadata?.phone_number_id || !message?.from) {
@@ -86,22 +86,23 @@ const handleMessage = async (req, res) => {
         from,
         type: message.type,
         timestamp: message.timestamp,
-        messageId: message.id,
+        messageId: message?.id || "N/A",
       });
 
       if (message.type === "order") {
-        const orderDetails = message.order || message.text.body; // Ensure order details are extracted correctly
-        await handleOrderMessage(phoneNumberId, from, orderDetails, id); // Pass the id here
-      } else if (message.text?.body) {
+        const orderDetails = message.order || null; // Ensure order details are extracted correctly and it's null if not present
+        await handleOrderMessage(phoneNumberId, from, orderDetails, id);
+      } else if (message.text && message.text.body) {
         await handleTextMessage(phoneNumberId, from, message.text.body);
       } else {
         logger.warn("Unsupported message type", { type: message.type });
       }
 
-      return res.sendStatus(200);
+      await res.sendStatus(200);
+      return;
     }
 
-    return res.sendStatus(200); // Acknowledge other webhook types silently
+    await res.sendStatus(200); // Acknowledge other webhook types silently
   } catch (error) {
     logger.error("Error in webhook handler", {
       error: error.message,
