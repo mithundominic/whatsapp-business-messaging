@@ -1,5 +1,7 @@
 const logger = require("../utils/logger");
+const { calculateTotalAmount } = require("../utils/calculationUtils");
 const whatsappService = require("../services/whatsappService");
+const paymentService = require("../services/paymentService");
 const config = require("../config/environment");
 const {
   validateWebhookBody,
@@ -16,8 +18,12 @@ const {
 const handleOrderMessage = async (phoneNumberId, from, orderDetails, id) => {
   logger.info("Order details received", { orderDetails, id });
   if (orderDetails) {
+    const totalAmount = calculateTotalAmount(orderDetails.product_items);
+    logger.info("Total amount calculated", { totalAmount });
+
     await whatsappService.sendOrderConfirmation(phoneNumberId, from, {
       ...orderDetails,
+      totalAmount, // Include total amount in the order confirmation
       id,
     });
   } else {

@@ -6,9 +6,9 @@ const {
 } = require("../controllers/webhookController");
 
 // Webhook verification endpoint
-router.get("/webhook", verifyWebhook);
+router.get("/webhook/whatsapp", verifyWebhook);
 
 // Webhook event handling endpoint
-router.post("/webhook", handleMessage);
+router.post("/webhook/whatsapp", handleMessage);
 
 module.exports = router;

@@ -2,6 +2,8 @@ const axios = require("axios");
 const logger = require("../utils/logger");
 const config = require("../config/environment");
 const { getMessageContent } = require("../templates/whatsappTemplates");
+const { createPaymentLink } = require("./paymentService");
+const { calculateTotalAmount } = require("../utils/calculationUtils");
 
 class WhatsAppService {
   constructor() {
@@ -20,7 +22,22 @@ class WhatsAppService {
    * @param {object} details - Message content details.
    * @returns {Promise<object>} - API response.
    */
-  async sendMessage(phoneNumberId, to, type, details = {}) {
+  async sendMessage(
+    phoneNumberId,
+    to,
+    type,
+    details = {},
+    paymentLink,
+    orderDetails
+  ) {
+    logger.debug("MITHUN-------->", {
+      phoneNumberId,
+      to,
+      type,
+      details,
+      orderDetails,
+    });
+
     if (!phoneNumberId || !to || !type) {
       throw new Error(
         "Missing required parameters: phoneNumberId, to, or type"
@@ -31,7 +48,7 @@ class WhatsAppService {
       const payload = {
         messaging_product: "whatsapp",
         to,
-        ...getMessageContent(type, details),
+        ...getMessageContent(type, details, paymentLink, orderDetails),
       };
 
       logger.debug("Sending WhatsApp message", { to, type, payload });
@@ -75,23 +92,48 @@ class WhatsAppService {
    * @param {object} orderDetails - Order details.
    * @returns {Promise<object>} - API response.
    */
+
   async sendOrderConfirmation(phoneNumberId, to, orderDetails = {}) {
     logger.debug("Sending order confirmation", {
       phoneNumberId,
       to,
       orderDetails,
     });
-    logger.info("Order details Mithun", orderDetails.id);
+
+    logger.info("Order details", orderDetails); // Log order details
+
+    const totalAmount = calculateTotalAmount(orderDetails.product_items);
+    logger.info("Total amount calculated", { totalAmount });
+
     if (!orderDetails.id) {
-      throw new Error("Missing required order details: id or status Mithun");
+      throw new Error("Missing required order details: id or total_amount");
     }
 
-    return this.sendMessage(
-      phoneNumberId,
-      to,
-      "order_confirmation",
-      orderDetails
-    );
+    try {
+      // Generate Stripe Payment Link
+      const paymentLink = await createPaymentLink(totalAmount);
+
+      // Append Payment Link to Order Message
+      const orderMessage = `${orderDetails.id} - Your order is confirmed!\n\nTotal: $${totalAmount}\n\nComplete your payment here: ${paymentLink}`;
+
+      // Send the message
+      return this.sendMessage(
+        phoneNumberId,
+        to,
+        "order_confirmation",
+        {
+          body: orderMessage,
+        },
+        paymentLink,
+        orderDetails
+      );
+    } catch (error) {
+      logger.error("Error generating payment link", {
+        error: error.message,
+        stack: error.stack,
+      });
+      throw new Error("Failed to generate payment link");
+    }
   }
 }
 
