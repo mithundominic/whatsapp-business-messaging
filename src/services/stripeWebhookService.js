@@ -1,4 +1,5 @@
 const logger = require("../utils/logger");
+const whatsappService = require("./whatsappService");
 
 /**
  * Handle successful payment intent
@@ -23,12 +24,32 @@ const handlePaymentIntentSucceeded = async (paymentIntent) => {
         amount: charge.amount,
         status: charge.status,
         created: charge.created,
+        receipt_url: charge.receipt_url,
       })),
     });
 
-    // TODO: Add business logic for successful payments
+    // Get receipt URL from the first charge
+    const receiptUrl = paymentIntent.charges?.data?.[0]?.receipt_url;
+
+    // Send WhatsApp notification
+    const phoneNumber = paymentIntent.metadata?.phone_number;
+    if (phoneNumber) {
+      await whatsappService.sendMessage(
+        config.whatsapp.phoneNumberId,
+        phoneNumber,
+        "payment_success",
+        {
+          amount: paymentIntent.amount,
+          currency: paymentIntent.currency,
+          receipt_url: receiptUrl,
+        }
+      );
+    }
+
     logger.info("Successfully processed payment intent", {
       id: paymentIntent.id,
+      receiptUrl,
+      whatsappSent: !!phoneNumber,
     });
   } catch (error) {
     logger.error("Error handling successful payment intent", {
@@ -54,7 +75,25 @@ const handlePaymentIntentFailed = async (paymentIntent) => {
       failureMessage: paymentIntent.last_payment_error?.message,
     });
 
-    // TODO: Add business logic for failed payments
+    // Send WhatsApp notification
+    const phoneNumber = paymentIntent.metadata?.phone_number;
+    if (phoneNumber) {
+      await whatsappService.sendMessage(
+        config.whatsapp.phoneNumberId,
+        phoneNumber,
+        "payment_failure",
+        {
+          amount: paymentIntent.amount,
+          currency: paymentIntent.currency,
+          failure_message: paymentIntent.last_payment_error?.message,
+        }
+      );
+    }
+
+    logger.info("Sent payment failure notification", {
+      id: paymentIntent.id,
+      whatsappSent: !!phoneNumber,
+    });
   } catch (error) {
     logger.error("Error handling failed payment intent", {
       error: error.message,

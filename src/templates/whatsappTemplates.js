@@ -1,99 +1,53 @@
 const logger = require("../utils/logger");
+const {
+  default_response: defaultResponseTemplate,
+  payment_success: paymentSuccessTemplate,
+  payment_failure: paymentFailureTemplate,
+  order_confirmation: orderConfirmationTemplate,
+} = require("./templates");
 
-/**
- * WhatsApp message templates configuration
- *
- * This file defines templates for different types of WhatsApp messages:
- * - For order messages: Sends order total and items ordered
- * - For other messages: Sends a simple thank you message
- */
-
-const templates = {
-  // Default template for non-order messages
-  default_response: {
-    type: "text",
-    text: {
-      body: "Thank you for your message!",
-    },
-  },
-
-  // Template for order messages
-  order_confirmation: {
-    type: "text",
-    getText: (details, paymentLink, orderDetails) => {
-      logger.info("Generating order confirmation text", {
-        orderDetails,
-      });
-
-      if (
-        !orderDetails?.product_items ||
-        orderDetails.product_items.length === 0
-      ) {
-        logger.warn("Order details are missing or empty", { orderDetails });
-        return { body: "Order details are missing." };
-      }
-
-      const totalAmount = orderDetails.product_items.reduce((sum, item) => {
-        return sum + item.quantity * item.item_price;
-      }, 0);
-
-      const currency = orderDetails.product_items[0]?.currency || "USD";
-
-      const itemsList = orderDetails.product_items
-        .map(
-          (item) =>
-            `${item.product_retailer_id}: ${item.quantity} x ${currency} ${item.item_price}`
-        )
-        .join("\n");
-
-      logger.info("Generated order summary", { totalAmount, itemsList });
-
-      return {
-        body: `Thank you for your order!\n\nOrder Details:\n${itemsList}\n\nTotal Amount: ${currency} ${totalAmount}\nPayment Link: ${paymentLink}`,
-      };
-    },
-  },
+const TEMPLATE_TYPES = {
+  ORDER_CONFIRMATION: "order_confirmation",
+  PAYMENT_SUCCESS: "payment_success",
+  PAYMENT_FAILURE: "payment_failure",
 };
 
 /**
  * Get message content based on message type and details
- * @param {string} type - Message type ('order' or other)
- * @param {object} details - Message details (order details for order type)
+ * @param {string} type - Message type
+ * @param {object} details - Message details
+ * @param {string} paymentLink - Payment link for order confirmation
  * @returns {object} Message content configuration
  */
-const getMessageContent = (
-  type,
-  details = {},
-  paymentLink = "",
-  orderDetails
-) => {
-  logger.info("getMessageContent invoked", { type, details, orderDetails });
+const getMessageContent = (type, details = {}, paymentLink = "") => {
+  logger.info("getMessageContent invoked", { type, details });
 
-  switch (type) {
-    case "order_confirmation":
-      if (details?.body) {
-        const orderText = templates.order_confirmation.getText(
-          details,
-          paymentLink,
-          orderDetails
-        );
-        logger.info(
-          "Returning order confirmation message----------",
-          { orderText },
-          orderDetails
-        );
-        return {
-          type: "text",
-          text: orderText,
-        };
-      }
-      break;
-    default:
-      logger.warn("Returning default response", { type, details });
-      return templates.default_response;
+  // Handle invalid type early
+  if (!Object.values(TEMPLATE_TYPES).includes(type)) {
+    logger.warn("Returning default response for invalid type", { type });
+    return defaultResponseTemplate;
   }
+
+  // Handle order confirmation
+  if (type === TEMPLATE_TYPES.ORDER_CONFIRMATION && details?.body) {
+    const orderText = orderConfirmationTemplate.getText(details, paymentLink);
+    logger.info("Returning order confirmation message", { orderText });
+    return { type: "text", text: orderText };
+  }
+
+  // Handle other template types
+  const templateMap = {
+    [TEMPLATE_TYPES.PAYMENT_SUCCESS]: paymentSuccessTemplate,
+    [TEMPLATE_TYPES.PAYMENT_FAILURE]: paymentFailureTemplate,
+  };
+
+  return {
+    type: "text",
+    text: templateMap[type].getText(details),
+  };
 };
 
 module.exports = {
   getMessageContent,
+  TEMPLATE_TYPES,
 };
