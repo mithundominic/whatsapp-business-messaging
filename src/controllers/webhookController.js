@@ -1,7 +1,6 @@
 const logger = require("../utils/logger");
 const { calculateTotalAmount } = require("../utils/calculationUtils");
 const whatsappService = require("../services/whatsappService");
-const paymentService = require("../services/paymentService");
 const config = require("../config/environment");
 const {
   validateWebhookBody,
@@ -125,7 +124,7 @@ const verifyWebhook = (req, res) => {
       return res.sendStatus(400);
     }
 
-    if (mode === "subscribe" && token === config.webhookToken) {
+    if (mode === "subscribe" && token === config.whatsapp.webhookToken) {
       logger.info("Webhook verified successfully");
       return res.status(200).send(challenge);
     }

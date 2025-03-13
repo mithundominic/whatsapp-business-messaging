@@ -6,14 +6,18 @@ const logger = require("./utils/logger");
 
 const app = express();
 
-// Middleware
-app.use(
-  express.json({
-    verify: (req, res, buf) => {
-      req.rawBody = buf;
-    },
-  })
+// 🛑 Place Stripe Webhook Middleware BEFORE express.json()
+app.post(
+  "/webhook/stripe",
+  express.raw({ type: "application/json" }), // ✅ Preserve raw body
+  (req, res, next) => {
+    req.rawBody = req.body; // ✅ Ensure rawBody is captured
+    next();
+  }
 );
+
+// ✅ Now, Apply JSON Middleware After Webhook Handling
+app.use(express.json());
 
 // Routes
 app.get("/", (req, res) => {

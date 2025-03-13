@@ -9,8 +9,12 @@ const config = {
     businessAccountId: process.env.WHATSAPP_BUSINESS_ACCOUNT_ID,
     phoneNumberId: process.env.WHATSAPP_PHONE_NUMBER_ID,
     businessPhoneNumber: process.env.BUSINESS_PHONE_NUMBER,
+    webhookToken: process.env.WHATSAPP_WEBHOOK_SECRET,
   },
-  webhookToken: process.env.WHATSAPP_WEBHOOK_SECRET,
+  stripe: {
+    secretKey: process.env.STRIPE_SECRET_KEY,
+    webhookSecret: process.env.STRIPE_WEBHOOK_SECRET,
+  },
   nodeEnv: process.env.NODE_ENV,
 };
 

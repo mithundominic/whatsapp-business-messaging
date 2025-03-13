@@ -10,6 +10,19 @@ const getTimestamp = () =>
     second: "2-digit",
   });
 
+const serializeError = (error) => {
+  if (error instanceof Error) {
+    return {
+      message: error.message,
+      stack: error.stack,
+      ...(error.code && { code: error.code }),
+      ...(error.type && { type: error.type }),
+      ...(error.name && { name: error.name }),
+    };
+  }
+  return error;
+};
+
 const log = (level, color, icon, message, meta = {}) => {
   console.log(
     `${chalk[color](icon)} ${chalk.gray(getTimestamp())} ${chalk[color].bold(
@@ -18,7 +31,7 @@ const log = (level, color, icon, message, meta = {}) => {
   );
 
   if (meta && Object.keys(meta).length) {
-    console.dir(meta, { depth: null, colors: true }); // Allow object expansion
+    console.dir(meta, { depth: null, colors: true });
   }
 };
 
@@ -27,17 +40,21 @@ const logger = {
   success: (message, meta) => log("SUCCESS", "green", "✓", message, meta),
   warn: (message, meta) => log("WARN", "yellow", "⚠", message, meta),
   error: (message, error = {}, meta) => {
+    const serializedError = serializeError(error);
+    
     console.error(
       `${chalk.red("✖")} ${chalk.gray(getTimestamp())} ${chalk.red.bold(
         "ERROR"
-      )} ${chalk.white(message)}\n${chalk.red("→")} ${chalk.red(
-        error.message || error
-      )}`
+      )} ${chalk.white(message)}`
     );
-
-    if (error.stack) console.error(chalk.gray(error.stack));
-    if (meta && Object.keys(meta).length)
+    
+    console.error(chalk.red("→ Error Details:"));
+    console.dir(serializedError, { depth: null, colors: true });
+    
+    if (meta && Object.keys(meta).length) {
+      console.error(chalk.red("→ Additional Metadata:"));
       console.dir(meta, { depth: null, colors: true });
+    }
   },
   debug: (message, meta) => log("DEBUG", "magenta", "⚙", message, meta),
 };
