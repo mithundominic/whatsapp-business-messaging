@@ -1,10 +1,8 @@
 const logger = require("../utils/logger");
-const {
-  default_response: defaultResponseTemplate,
-  payment_success: paymentSuccessTemplate,
-  payment_failure: paymentFailureTemplate,
-  order_confirmation: orderConfirmationTemplate,
-} = require("./templates");
+const defaultResponseTemplate = require("./defaultResponseTemplate");
+const paymentSuccessTemplate = require("./paymentSuccessTemplate");
+const paymentFailureTemplate = require("./paymentFailureTemplate");
+const orderConfirmationTemplate = require("./orderConfirmationTemplate");
 
 const TEMPLATE_TYPES = {
   ORDER_CONFIRMATION: "order_confirmation",
